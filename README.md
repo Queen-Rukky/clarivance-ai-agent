@@ -62,6 +62,17 @@ print(lead.run("What plan is jane@example.com on?").text)
 Requests opt into server-side refusal fallback (`fallbacks: "default"`), so a request a
 safety classifier declines is retried on Anthropic's recommended fallback model.
 
+## Running on GitHub Actions
+
+The **Run Clarivance agent** workflow (`.github/workflows/run-agent.yml`) runs the agents on GitHub.
+
+1. Add your Claude API key under **Settings → Secrets and variables → Actions** as a repository secret named `ANTHROPIC_API_KEY`.
+2. Open the **Actions** tab, choose **Run Clarivance agent**, click **Run workflow**, and enter a task.
+3. The result appears on the run page, as a downloadable `result.md`, and (optionally) as a new issue.
+
+To run a task on a schedule, uncomment the `schedule` block in the workflow and edit the default task.
+The repository is public, so run pages and issues are visible to anyone.
+
 ## Tests
 
 ```bash
