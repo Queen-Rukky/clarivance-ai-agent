@@ -1,0 +1,13 @@
+# The company website lives in website/. Netlify builds nothing: it serves
+# website/public as-is and bundles the chat function in website/netlify/functions.
+[build]
+  base = "website"
+  publish = "public"
+  functions = "netlify/functions"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
