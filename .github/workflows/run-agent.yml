@@ -11,6 +11,10 @@ on:
         type: choice
         options: [coordinator, researcher, writer]
         default: coordinator
+      model:
+        description: "Model ID (leave empty for the default: openrouter/free on OpenRouter)"
+        required: false
+        default: ""
       post_issue:
         description: "Also post the result as a GitHub issue"
         type: boolean
@@ -31,6 +35,10 @@ jobs:
       # Task and agent come from the form, or these defaults for scheduled runs.
       TASK: ${{ inputs.task || 'Summarise the top AI news from the last 24 hours in 5 bullets, with sources.' }}
       AGENT: ${{ inputs.agent || 'coordinator' }}
+      CLARIVANCE_MODEL: ${{ inputs.model }}
+      # Whichever key is set picks the provider (OpenRouter if only it is set).
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,17 +52,13 @@ jobs:
         run: pip install -e .
 
       - name: Check API key
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "::error::Add your Claude API key as a repository secret named ANTHROPIC_API_KEY (Settings > Secrets and variables > Actions)."
+          if [ -z "$OPENROUTER_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::Add an API key as a repository secret (Settings > Secrets and variables > Actions): OPENROUTER_API_KEY (free models) or ANTHROPIC_API_KEY (Claude)."
             exit 1
           fi
 
       - name: Run agent
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: clarivance --agent "$AGENT" "$TASK" > result.md
 
       - name: Show result on the run page

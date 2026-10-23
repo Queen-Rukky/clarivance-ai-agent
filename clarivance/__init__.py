@@ -1,4 +1,4 @@
-"""Clarivance AI Agents: a small multi-agent framework built on the Claude API."""
+"""Clarivance AI Agents: a small multi-agent framework for Claude and OpenRouter models."""
 
 from .agent import DEFAULT_MODEL, Agent, AgentResult, Usage
 from .team import build_team

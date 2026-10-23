@@ -7,8 +7,10 @@ from typing import Any
 
 from .agent import Agent, EventHandler
 from .tools import tool
+from .web import fetch_page, web_search
 
-WEB_SEARCH = {"type": "web_search_20260209", "name": "web_search", "max_uses": 8}
+# Claude's hosted web search; only used on the Claude API.
+CLAUDE_WEB_SEARCH = {"type": "web_search_20260209", "name": "web_search", "max_uses": 8}
 
 
 @tool
@@ -17,25 +19,35 @@ def current_date() -> str:
     return date.today().isoformat()
 
 
-def build_team(*, client: Any = None, on_event: EventHandler | None = None) -> dict[str, Agent]:
+def build_team(
+    *,
+    provider: str | None = None,
+    model: str | None = None,
+    client: Any = None,
+    on_event: EventHandler | None = None,
+) -> dict[str, Agent]:
     """Create the researcher, writer and coordinator agents.
 
     Returns a dict keyed by agent name. The coordinator holds the other two
     as tools, so running it runs the whole team.
     """
-    common = {"client": client, "on_event": on_event}
+    common = {"provider": provider, "model": model, "client": client, "on_event": on_event}
 
     researcher = Agent(
         "researcher",
         "You are Clarivance's research specialist. Investigate the question you are "
-        "given using web search, and report back concise findings with the source "
-        "URL for every claim. Say plainly when evidence is thin or conflicting.",
+        "given using web search (and read the most relevant pages when snippets are "
+        "not enough), then report back concise findings with the source URL for every "
+        "claim. Say plainly when evidence is thin or conflicting.",
         description="Searches the web and returns sourced findings.",
         tools=[current_date],
-        server_tools=[WEB_SEARCH],
+        server_tools=[CLAUDE_WEB_SEARCH],
         effort="medium",
         **common,
     )
+    if not researcher.server_tools:
+        # No hosted search on this provider: use the free DuckDuckGo tools.
+        researcher.tools.update({t.name: t for t in (web_search, fetch_page)})
 
     writer = Agent(
         "writer",

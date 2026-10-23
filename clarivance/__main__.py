@@ -7,6 +7,7 @@ import sys
 from typing import Any
 
 import anthropic
+import openai
 
 from .team import build_team
 
@@ -30,20 +31,35 @@ def main(argv: list[str] | None = None) -> int:
         choices=["coordinator", "researcher", "writer"],
         help="Which agent to run (default: coordinator, which delegates to the others).",
     )
+    parser.add_argument(
+        "--provider",
+        choices=["anthropic", "openrouter"],
+        help="Model provider (default: CLARIVANCE_PROVIDER, else whichever API key is set).",
+    )
+    parser.add_argument("--model", help="Model ID (default: CLARIVANCE_MODEL, else the provider's default).")
     parser.add_argument("-q", "--quiet", action="store_true", help="Hide agent activity logs.")
     args = parser.parse_args(argv)
 
-    team = build_team(on_event=None if args.quiet else _log)
+    team = build_team(provider=args.provider, model=args.model, on_event=None if args.quiet else _log)
+    agent = team[args.agent]
+    if not args.quiet:
+        print(f"[clarivance] provider={agent.provider} model={agent.model}", file=sys.stderr)
     try:
-        result = team[args.agent].run(args.task)
-    except anthropic.AuthenticationError:
-        print("Authentication failed: set ANTHROPIC_API_KEY or run `ant auth login`.", file=sys.stderr)
+        result = agent.run(args.task)
+    except (anthropic.AuthenticationError, openai.AuthenticationError):
+        print(f"Authentication failed for {agent.provider}: check your API key.", file=sys.stderr)
         return 2
-    except anthropic.APIConnectionError as exc:
-        print(f"Could not reach the Claude API: {exc}", file=sys.stderr)
+    except (anthropic.RateLimitError, openai.RateLimitError):
+        print(f"{agent.provider} rate limit reached (free models have daily limits). Try again later.", file=sys.stderr)
         return 2
-    except anthropic.APIStatusError as exc:
-        print(f"Claude API error {exc.status_code}: {exc.message}", file=sys.stderr)
+    except (anthropic.APIConnectionError, openai.APIConnectionError) as exc:
+        print(f"Could not reach {agent.provider}: {exc}", file=sys.stderr)
+        return 2
+    except (anthropic.APIStatusError, openai.APIStatusError) as exc:
+        print(f"{agent.provider} API error {exc.status_code}: {exc.message}", file=sys.stderr)
+        return 2
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
         return 2
 
     print(result.text)

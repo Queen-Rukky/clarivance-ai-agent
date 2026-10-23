@@ -5,10 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "clarivance"
 version = "0.1.0"
-description = "Clarivance AI Agents: a small multi-agent framework built on the Claude API"
+description = "Clarivance AI Agents: a small multi-agent framework for Claude and OpenRouter models"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["anthropic>=2.1"]
+dependencies = ["anthropic>=2.1", "openai>=3", "ddgs>=9"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
