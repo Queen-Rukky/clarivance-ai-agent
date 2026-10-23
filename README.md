@@ -40,6 +40,7 @@ goes to stdout. Use `-q` to hide the logs.
 | `clarivance/tools.py` | `Tool` and the `@tool` decorator, which builds a strict JSON schema from a function's type hints and docstring |
 | `clarivance/team.py` | The starter team: `coordinator` → `researcher` (web search) and `writer` |
 | `clarivance/__main__.py` | The `clarivance` command-line tool |
+| `web/index.html` | The chat website, published with GitHub Pages |
 | `tests/` | Offline tests using a scripted fake client (no API key needed) |
 
 ## Building your own agents
@@ -74,6 +75,17 @@ on Claude, `openrouter/free` on OpenRouter), `effort` (`low` … `max`, Claude o
 
 On the Claude API, requests opt into server-side refusal fallback (`fallbacks: "default"`), so a request a
 safety classifier declines is retried on Anthropic's recommended fallback model.
+
+## Chat website (GitHub Pages)
+
+`web/index.html` is a chat page (Assistant, Writer and Planner modes) that talks to OpenRouter's free
+models straight from the browser. It is published by `.github/workflows/pages.yml`.
+
+1. In the repo, open **Settings → Pages** and set **Source** to **GitHub Actions** (once).
+2. Run **Actions → Deploy chat site → Run workflow** (it also runs on every change to `web/`).
+3. Open `https://queen-rukky.github.io/clarivance-ai-agent/`, click **API key**, and paste your
+   OpenRouter key. The key is saved only in that browser and sent only to OpenRouter; it is never
+   part of the site, so it is safe even though the repository is public.
 
 ## Running on GitHub Actions
 
