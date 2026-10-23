@@ -76,16 +76,22 @@ on Claude, `openrouter/free` on OpenRouter), `effort` (`low` … `max`, Claude o
 On the Claude API, requests opt into server-side refusal fallback (`fallbacks: "default"`), so a request a
 safety classifier declines is retried on Anthropic's recommended fallback model.
 
-## Company website (Netlify)
+## Company website
 
-`website/` is the Clarivance Ltd website: training tracks, freelance services, a contact form
-(Netlify Forms) and a chat assistant. It deploys to Netlify using `netlify.toml` at the repo root.
+`website/` is the Clarivance Ltd website: training tracks, freelance services, a contact form and a
+chat assistant.
 
-- `website/public/` is served as-is (no build step).
-- `website/netlify/functions/chat.mts` serves `/api/chat`. It adds the assistant's instructions,
-  forces the free `openrouter/free` model and streams the answer back. It reads the key from the
-  `OPENROUTER_API_KEY` environment variable set on Netlify, so the key is never in the site or repo.
-- Contact form messages appear in Netlify under **Forms**; turn on email notifications there.
+- **Pages:** `website/public/` is published to GitHub Pages by `.github/workflows/pages.yml`
+  (custom domain set under **Settings → Pages**).
+- **Chat and contact form:** two Netlify functions on the `clarivance` Netlify project
+  (`netlify.toml` at the repo root):
+  - `/api/chat` adds the assistant's instructions, forces the free `openrouter/free` model and
+    streams the answer. The key comes from the `OPENROUTER_API_KEY` environment variable on Netlify,
+    so it is never in the site or this repo.
+  - `/api/contact` records messages as Netlify Forms submissions (see **Forms** in Netlify, where
+    email notifications can be turned on).
+- The functions only accept browser requests from the origins in `website/netlify/lib/http.mts`;
+  add the custom domain there once it is connected.
 
 ## Running on GitHub Actions
 

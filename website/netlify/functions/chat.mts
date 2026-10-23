@@ -1,4 +1,5 @@
 import type { Config, Context } from "@netlify/functions"
+import { corsHeaders, json, originAllowed, preflight } from "../lib/http.mts"
 
 // The website's chat assistant. The OpenRouter key lives only in the
 // OPENROUTER_API_KEY environment variable on Netlify; visitors never see it.
@@ -28,9 +29,6 @@ How to help:
 
 type Turn = { role: "user" | "assistant"; content: string }
 
-const json = (body: unknown, status: number) =>
-  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } })
-
 export function cleanTurns(input: unknown): Turn[] | null {
   if (!Array.isArray(input)) return null
   const turns: Turn[] = []
@@ -46,23 +44,21 @@ export function cleanTurns(input: unknown): Turn[] | null {
 }
 
 export default async (req: Request, context: Context) => {
-  // Only this website's own pages may call the assistant.
-  const origin = req.headers.get("origin")
-  if (origin && new URL(origin).host !== new URL(req.url).host) {
-    return json({ error: "Not allowed." }, 403)
-  }
+  if (req.method === "OPTIONS") return preflight(req)
+  // Only the Clarivance website may call the assistant.
+  if (!originAllowed(req)) return json(req, { error: "Not allowed." }, 403)
 
   let payload: { messages?: unknown }
   try {
     payload = await req.json()
   } catch {
-    return json({ error: "Send JSON with a messages list." }, 400)
+    return json(req, { error: "Send JSON with a messages list." }, 400)
   }
   const turns = cleanTurns(payload.messages)
-  if (!turns) return json({ error: "The conversation must end with a question." }, 400)
+  if (!turns) return json(req, { error: "The conversation must end with a question." }, 400)
 
   const key = Netlify.env.get("OPENROUTER_API_KEY")
-  if (!key) return json({ error: "The assistant is not set up yet." }, 503)
+  if (!key) return json(req, { error: "The assistant is not set up yet." }, 503)
 
   let upstream: Response
   try {
@@ -82,7 +78,7 @@ export default async (req: Request, context: Context) => {
       }),
     })
   } catch {
-    return json({ error: "The assistant couldn't be reached." }, 502)
+    return json(req, { error: "The assistant couldn't be reached." }, 502)
   }
 
   if (!upstream.ok || !upstream.body) {
@@ -90,16 +86,16 @@ export default async (req: Request, context: Context) => {
     console.error(`OpenRouter error ${upstream.status}: ${detail.slice(0, 300)}`)
     // Free models are rate limited; pass that on so the page can say so.
     const status = upstream.status === 429 ? 429 : 502
-    return json({ error: "The assistant couldn't answer just now." }, status)
+    return json(req, { error: "The assistant couldn't answer just now." }, status)
   }
 
   return new Response(upstream.body, {
-    headers: { "content-type": "text/event-stream", "cache-control": "no-cache" },
+    headers: { "content-type": "text/event-stream", "cache-control": "no-cache", ...corsHeaders(req) },
   })
 }
 
 export const config: Config = {
   path: "/api/chat",
-  method: "POST",
+  method: ["POST", "OPTIONS"],
   rateLimit: { action: "rate_limit", aggregateBy: ["ip", "domain"], windowSize: 60, windowLimit: 15 },
 }

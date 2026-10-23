@@ -2,6 +2,12 @@
 (() => {
   const $ = (sel) => document.querySelector(sel);
 
+  // The pages are served by GitHub Pages; the chat and contact form run as
+  // Netlify functions, which keep the API key private.
+  const API = /(^|\.)netlify\.app$|^localhost$|^127\.0\.0\.1$/.test(location.hostname)
+    ? ""
+    : "https://clarivance.netlify.app";
+
   // Footer year
   $("#year").textContent = new Date().getFullYear();
 
@@ -35,18 +41,22 @@
     status.textContent = "Sending...";
     submit.disabled = true;
     try {
-      const res = await fetch("/", {
+      const res = await fetch(API + "/api/contact", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams(new FormData(form)).toString(),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(new FormData(form))),
       });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        let msg = "";
+        try { msg = (await res.json()).error || ""; } catch (e) {}
+        throw new Error(msg);
+      }
       form.reset();
       status.className = "form-status ok";
       status.textContent = "Thanks, your message was sent. We will reply by email.";
     } catch (err) {
       status.className = "form-status err";
-      status.textContent = "Your message didn't send. Check your connection and try again.";
+      status.textContent = err.message || "Your message didn't send. Check your connection and try again.";
     } finally {
       submit.disabled = false;
     }
@@ -163,7 +173,7 @@
 
   // Streams the answer from /api/chat (a Netlify function that holds the API key).
   async function complete(messages, signal, onText) {
-    const res = await fetch("/api/chat", {
+    const res = await fetch(API + "/api/chat", {
       method: "POST",
       signal,
       headers: { "Content-Type": "application/json" },
