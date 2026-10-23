@@ -5,8 +5,8 @@
 export const ALLOWED_ORIGINS = [
   "https://queen-rukky.github.io",
   "https://clarivance.netlify.app",
-  // Add the custom domain here once it is connected, e.g.
-  // "https://clarivance.com", "https://www.clarivance.com",
+  "https://clarivanceltd.com",
+  "https://www.clarivanceltd.com",
 ]
 
 export function originAllowed(req: Request): boolean {

@@ -90,8 +90,8 @@ chat assistant.
     so it is never in the site or this repo.
   - `/api/contact` records messages as Netlify Forms submissions (see **Forms** in Netlify, where
     email notifications can be turned on).
-- The functions only accept browser requests from the origins in `website/netlify/lib/http.mts`;
-  add the custom domain there once it is connected.
+- The site's domain is **clarivanceltd.com**. The functions only accept browser requests from the
+  origins listed in `website/netlify/lib/http.mts`.
 
 ## Running on GitHub Actions
 
